@@ -308,23 +308,25 @@ Example:
 What tables are related to the ORDERS table?
 ```
 
-#### `delete_rows`
-Delete rows from a table that match the specified condition.
+#### `execute_select_query`
+Execute a SELECT SQL query and return the results as a formatted table. Only queries starting with SELECT are allowed.
 Example:
 ```
-Can you delete all inactive customers from the CUSTOMERS table?
+Run: SELECT * FROM EMPLOYEES WHERE DEPARTMENT_ID = 10;
 ```
-#### `update_rows`
-Update rows in a table that match the specified condition.
+
+#### `execute_update_query`
+Execute an UPDATE SQL query and return the number of affected rows. Only queries starting with UPDATE are allowed.
 Example:
 ```
-Please update the status to 'COMPLETED' for all orders older than 30 days.
+Update the salary for all employees in department 10: UPDATE EMPLOYEES SET SALARY = SALARY * 1.1 WHERE DEPARTMENT_ID = 10;
 ```
-#### `get_rows`
-Get rows from a table that match the specified condition. Results are returned as formatted rows with column names and values.
+
+#### `execute_delete_query`
+Execute a DELETE SQL query and return the number of affected rows. Only queries starting with DELETE are allowed.
 Example:
 ```
-Show me the first 5 active customers from the CUSTOMERS table.
+Delete all employees in department 10: DELETE FROM EMPLOYEES WHERE DEPARTMENT_ID = 10;
 ```
 
 ## Architecture

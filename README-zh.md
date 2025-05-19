@@ -307,33 +307,26 @@ ORDERS 表定义了哪些约束？
 ```
 ORDERS 表与哪些表有关联？
 ```
-```
 
-#### `delete_rows`
-
-根据指定条件从表中删除数据行。
+#### `execute_select_query`
+执行 SELECT SQL 查询并返回格式化的结果表。仅允许以 SELECT 开头的查询。
 示例：
-
 ```
-请从 CUSTOMERS 表中删除所有非活跃客户。
+运行：SELECT * FROM EMPLOYEES WHERE DEPARTMENT_ID = 10;
 ```
 
-#### `update_rows`
-
-根据指定条件更新表中的数据行。
+#### `execute_update_query`
+执行 UPDATE SQL 查询并返回受影响的行数。仅允许以 UPDATE 开头的查询。
 示例：
-
 ```
-请将所有超过 30 天的订单状态更新为 'COMPLETED'。
+将部门 10 的所有员工工资上调 10%：UPDATE EMPLOYEES SET SALARY = SALARY * 1.1 WHERE DEPARTMENT_ID = 10;
 ```
 
-#### `get_rows`
-
-根据指定条件从表中获取数据行。结果以格式化行的形式返回，包含列名和值。
+#### `execute_delete_query`
+执行 DELETE SQL 查询并返回受影响的行数。仅允许以 DELETE 开头的查询。
 示例：
-
 ```
-显示 CUSTOMERS 表中前 5 个活跃客户。
+删除部门 10 的所有员工：DELETE FROM EMPLOYEES WHERE DEPARTMENT_ID = 10;
 ```
 
 ## 架构
