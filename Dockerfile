@@ -36,6 +36,12 @@ ADD . /app
 
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /app
+
+# Create and activate venv for uv
+RUN python -m venv /app/.venv
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
 RUN uv sync --frozen
 
 # Set environment for MCP communication

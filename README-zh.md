@@ -97,7 +97,7 @@ MCP Oracle DB Context 服务器解决了在处理超大型 Oracle 数据库时�
                    "CACHE_DIR",
                    "-e",
                    "THICK_MODE",
-                   "dmeppiel/oracle-mcp-server"
+                   "shaharyar1255/oracle-mcp-server-updated"
                ],
                "env": {
                   "ORACLE_CONNECTION_STRING":"<db-username>/${input:db-password}@<host>:1521/<service-name>",
