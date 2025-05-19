@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: dmeppiel/oracle-mcp-server
+  IMAGE_NAME: shaharyar1255/oracle-mcp-server-updated
 
 jobs:
   publish:
