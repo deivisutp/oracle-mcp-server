@@ -662,5 +662,78 @@ async def execute_delete_query(query: str, ctx: Context) -> str:
     except Exception as e:
         return f"Error executing delete: {str(e)}"
 
+@mcp.tool()
+async def execute_plsql_ddl(plsql_code: str, ctx: Context) -> str:
+    """
+    Execute PL/SQL DDL code to create or replace database objects like procedures, functions, packages, triggers, etc.
+    This tool is essential for creating stored procedures and other PL/SQL objects in the Oracle database.
+    Use this when you need to create new database objects or modify existing ones using CREATE OR REPLACE statements.
+    
+    The tool handles various PL/SQL object types including:
+    - Procedures (CREATE OR REPLACE PROCEDURE)
+    - Functions (CREATE OR REPLACE FUNCTION) 
+    - Packages (CREATE OR REPLACE PACKAGE)
+    - Package Bodies (CREATE OR REPLACE PACKAGE BODY)
+    - Triggers (CREATE OR REPLACE TRIGGER)
+    - Types (CREATE OR REPLACE TYPE)
+    - Type Bodies (CREATE OR REPLACE TYPE BODY)
+    
+    The tool automatically checks for compilation errors after execution and reports them if any occur.
+    All DDL operations are automatically committed to the database.
+    
+    Args:
+        plsql_code: The complete PL/SQL DDL code to execute. Must be valid PL/SQL syntax.
+                   Should include the full CREATE OR REPLACE statement with proper termination.
+                   Example: "CREATE OR REPLACE PROCEDURE test_proc(p_name VARCHAR2) IS BEGIN NULL; END;"
+    
+    Returns:
+        A success message if the object was created successfully, or detailed error information
+        including compilation errors with line numbers and descriptions if the creation failed.
+    """
+    db_context: DatabaseContext = ctx.request_context.lifespan_context
+    try:
+        result = await db_context.execute_plsql_ddl(plsql_code)
+        return result
+    except Exception as e:
+        return f"Error executing PL/SQL DDL: {str(e)}"
+
+@mcp.tool()
+async def execute_plsql_call(call_statement: str, ctx: Context) -> str:
+    """
+    Execute a PL/SQL procedure or function call. This tool allows you to run existing stored procedures,
+    functions, or other executable PL/SQL code blocks in the Oracle database.
+    Use this tool when you need to execute business logic implemented in stored procedures or test
+    database functions that have been previously created.
+    
+    The tool supports multiple call formats:
+    - EXEC format: "EXEC procedure_name('parameter')" 
+    - Anonymous PL/SQL blocks: "BEGIN procedure_name('parameter'); END;"
+    - DECLARE blocks: "DECLARE var VARCHAR2(10); BEGIN procedure_name(var); END;"
+    - Direct procedure calls: "procedure_name('parameter')"
+    
+    All formats are automatically converted to proper PL/SQL anonymous blocks for execution.
+    The tool handles parameter passing and automatically commits the transaction after execution.
+    Trailing '/' characters (common in SQL*Plus scripts) are automatically removed.
+    
+    Args:
+        call_statement: The PL/SQL call statement to execute. Can be in various formats:
+                       - "EXEC procedure_name('param1', 'param2')" 
+                       - "BEGIN procedure_name('param1'); END;"
+                       - "DECLARE var VARCHAR2(10); BEGIN var := 'test'; procedure_name(var); END;"
+                       - "procedure_name('param1', 'param2')"
+                       Parameters should be properly quoted for string values and unquoted for numeric values.
+    
+    Returns:
+        A success message if the procedure/function executed successfully, or detailed error information
+        if the execution failed. Note that output parameters and function return values are not currently
+        captured in the response.
+    """
+    db_context: DatabaseContext = ctx.request_context.lifespan_context
+    try:
+        result = await db_context.execute_plsql_call(call_statement)
+        return result
+    except Exception as e:
+        return f"Error executing PL/SQL call: {str(e)}"
+
 if __name__ == "__main__":
     mcp.run()

@@ -148,3 +148,11 @@ class DatabaseContext:
     async def execute_delete_query(self, query: str) -> int:
         """Execute a DELETE query and return the number of affected rows."""
         return await self.db_connector.execute_delete_query(query)
+
+    async def execute_plsql_ddl(self, plsql_code: str) -> str:
+        """Execute PL/SQL DDL code (CREATE OR REPLACE procedures, functions, packages, etc.)"""
+        return await self.db_connector.execute_plsql_ddl(plsql_code)
+
+    async def execute_plsql_call(self, call_statement: str) -> str:
+        """Execute a PL/SQL procedure or function call"""
+        return await self.db_connector.execute_plsql_call(call_statement)

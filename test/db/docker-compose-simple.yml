@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  oracle:
+    container_name: oracle_xe
+    image: gvenzl/oracle-xe:21-slim
+    environment:
+      - ORACLE_PASSWORD=Welcome123
+      - APP_USER=testuser
+      - APP_USER_PASSWORD=testpass
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  oracle_data:

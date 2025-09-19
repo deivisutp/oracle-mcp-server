@@ -851,6 +851,138 @@ class DatabaseConnector:
         finally:
             await self._close_connection(conn)
 
+    async def execute_plsql_ddl(self, plsql_code: str) -> str:
+        """Execute PL/SQL DDL code (CREATE OR REPLACE procedures, functions, packages, etc.)
+        
+        Args:
+            plsql_code: The PL/SQL DDL code to execute (CREATE OR REPLACE statements)
+            
+        Returns:
+            A success message or error details
+        """
+        conn = await self.get_connection()
+        try:
+            cursor = conn.cursor()
+            
+            # Clean up the PL/SQL code - remove extra whitespace and ensure proper formatting
+            plsql_code = plsql_code.strip()
+            
+            # Execute the PL/SQL DDL
+            if self.thick_mode:
+                cursor.execute(plsql_code)
+            else:
+                await cursor.execute(plsql_code)
+            
+            # Commit the DDL operation
+            await self._commit(conn)
+            
+            # Check for compilation errors
+            schema = await self._get_effective_schema(conn)
+            
+            # Query for any compilation errors
+            error_cursor = conn.cursor()
+            errors = await self._execute_cursor(error_cursor, """
+                SELECT line, position, text, attribute
+                FROM all_errors
+                WHERE owner = :owner
+                AND name = (
+                    SELECT object_name 
+                    FROM all_objects 
+                    WHERE owner = :owner 
+                    AND object_type IN ('PROCEDURE', 'FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'TRIGGER', 'TYPE', 'TYPE BODY')
+                    AND last_ddl_time = (
+                        SELECT MAX(last_ddl_time) 
+                        FROM all_objects 
+                        WHERE owner = :owner
+                        AND object_type IN ('PROCEDURE', 'FUNCTION', 'PACKAGE', 'PACKAGE BODY', 'TRIGGER', 'TYPE', 'TYPE BODY')
+                    )
+                    AND ROWNUM = 1
+                )
+                ORDER BY sequence
+            """, owner=schema)
+            
+            if errors:
+                error_messages = []
+                for line, position, text, attribute in errors:
+                    error_messages.append(f"Line {line}, Position {position}: {text} ({attribute})")
+                return f"PL/SQL object created with compilation errors:\n" + "\n".join(error_messages)
+            else:
+                return "PL/SQL object created successfully."
+                
+        except oracledb.Error as e:
+            error_msg = str(e)
+            # Try to extract more meaningful error information
+            if hasattr(e, 'args') and len(e.args) > 0:
+                error_info = e.args[0]
+                if hasattr(error_info, 'message'):
+                    error_msg = error_info.message
+            return f"Error executing PL/SQL DDL: {error_msg}"
+        except Exception as e:
+            return f"Unexpected error executing PL/SQL DDL: {str(e)}"
+        finally:
+            await self._close_connection(conn)
+
+    async def execute_plsql_call(self, call_statement: str) -> str:
+        """Execute a PL/SQL procedure or function call (EXEC, BEGIN...END, or direct calls)
+        
+        Args:
+            call_statement: The PL/SQL call statement (e.g., "EXEC procedure_name('param')" or "BEGIN procedure_name('param'); END;")
+            
+        Returns:
+            A success message with any output parameters or error details
+        """
+        conn = await self.get_connection()
+        try:
+            cursor = conn.cursor()
+            
+            # Clean up the call statement
+            call_statement = call_statement.strip()
+            
+            # Handle different call formats
+            if call_statement.upper().startswith('EXEC '):
+                # Convert EXEC format to anonymous PL/SQL block
+                proc_call = call_statement[5:].strip()  # Remove 'EXEC '
+                if not proc_call.endswith(';'):
+                    proc_call += ';'
+                plsql_block = f"BEGIN\n  {proc_call}\nEND;"
+            elif call_statement.upper().startswith('DECLARE') or call_statement.upper().startswith('BEGIN'):
+                # Already in PL/SQL block format (DECLARE...BEGIN...END or BEGIN...END)
+                plsql_block = call_statement
+                # Remove trailing '/' if present (common in SQL*Plus scripts)
+                if plsql_block.rstrip().endswith('/'):
+                    plsql_block = plsql_block.rstrip()[:-1].rstrip()
+                if not plsql_block.endswith(';'):
+                    plsql_block += ';'
+            else:
+                # Assume it's a direct procedure call, wrap it in BEGIN...END
+                if not call_statement.endswith(';'):
+                    call_statement += ';'
+                plsql_block = f"BEGIN\n  {call_statement}\nEND;"
+            
+            # Execute the PL/SQL block
+            if self.thick_mode:
+                cursor.execute(plsql_block)
+            else:
+                await cursor.execute(plsql_block)
+            
+            # Commit the operation
+            await self._commit(conn)
+            
+            return "PL/SQL procedure/function executed successfully."
+                
+        except oracledb.Error as e:
+            error_msg = str(e)
+            # Try to extract more meaningful error information
+            if hasattr(e, 'args') and len(e.args) > 0:
+                error_info = e.args[0]
+                if hasattr(error_info, 'message'):
+                    error_msg = error_info.message
+            return f"Error executing PL/SQL call: {error_msg}"
+        except Exception as e:
+            return f"Unexpected error executing PL/SQL call: {str(e)}"
+        finally:
+            await self._close_connection(conn)
+
     async def _close_connection(self, conn):
         """Helper method to close connection based on mode"""
         try:
