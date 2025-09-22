@@ -329,6 +329,66 @@ Example:
 Delete all employees in department 10: DELETE FROM EMPLOYEES WHERE DEPARTMENT_ID = 10;
 ```
 
+#### `execute_plsql_ddl`
+Execute PL/SQL DDL code to create or replace database objects like procedures, functions, packages, triggers, etc. This tool is essential for creating stored procedures and other PL/SQL objects in the Oracle database.
+
+**Supported PL/SQL Object Types:**
+- Procedures (CREATE OR REPLACE PROCEDURE)
+- Functions (CREATE OR REPLACE FUNCTION) 
+- Packages (CREATE OR REPLACE PACKAGE)
+- Package Bodies (CREATE OR REPLACE PACKAGE BODY)
+- Triggers (CREATE OR REPLACE TRIGGER)
+- Types (CREATE OR REPLACE TYPE)
+- Type Bodies (CREATE OR REPLACE TYPE BODY)
+
+The tool automatically checks for compilation errors after execution and reports them if any occur. All DDL operations are automatically committed to the database.
+
+Example:
+```
+Create a new procedure:
+CREATE OR REPLACE PROCEDURE update_employee_salary(
+    p_employee_id NUMBER,
+    p_new_salary NUMBER
+) IS 
+BEGIN 
+    UPDATE employees 
+    SET salary = p_new_salary 
+    WHERE employee_id = p_employee_id;
+    COMMIT;
+END;
+```
+
+#### `execute_plsql_call`
+Execute a PL/SQL procedure or function call. This tool allows you to run existing stored procedures, functions, or other executable PL/SQL code blocks in the Oracle database.
+
+**Supported Call Formats:**
+- **EXEC format**: `EXEC procedure_name('parameter')`
+- **Anonymous PL/SQL blocks**: `BEGIN procedure_name('parameter'); END;`
+- **DECLARE blocks**: `DECLARE var VARCHAR2(10); BEGIN procedure_name(var); END;`
+- **Direct procedure calls**: `procedure_name('parameter')`
+
+All formats are automatically converted to proper PL/SQL anonymous blocks for execution. The tool handles parameter passing and automatically commits the transaction after execution. Trailing '/' characters (common in SQL*Plus scripts) are automatically removed.
+
+Examples:
+```
+Execute a procedure using EXEC format:
+EXEC update_employee_salary(123, 75000);
+
+Execute using a DECLARE block:
+DECLARE
+    v_emp_id NUMBER := 123;
+    v_new_salary NUMBER := 80000;
+BEGIN
+    update_employee_salary(v_emp_id, v_new_salary);
+    DBMS_OUTPUT.PUT_LINE('Salary updated successfully');
+END;
+
+Execute using BEGIN...END format:
+BEGIN
+    update_employee_salary(456, 85000);
+END;
+```
+
 ## Architecture
 
 This MCP server employs a three-layer architecture optimized for large-scale Oracle databases:
