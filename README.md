@@ -1,6 +1,6 @@
 # MCP Server - Oracle DB Context
 
-[English](README.md) | [中文](README-zh.md)
+[English](README.md)
 
 A powerful Model Context Protocol (MCP) server that provides contextual database schema information for large Oracle databases, enabling AI assistants to understand and work with databases containing thousands of tables.
 
