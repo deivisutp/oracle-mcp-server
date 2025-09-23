@@ -97,7 +97,7 @@ In VSCode Insiders, go to your user or workspace `settings.json` file and add th
                    "CACHE_DIR",
                    "-e",
                    "THICK_MODE",
-                   "shaharyar1255/oracle-mcp-server-updated"
+                   "deivisutpphilips/oracle-mcp-server"
                ],
                "env": {
                   "ORACLE_CONNECTION_STRING":"<db-username>/${input:db-password}@<host>:1521/<service-name>",
