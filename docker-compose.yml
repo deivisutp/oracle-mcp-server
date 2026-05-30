@@ -1,0 +1,46 @@
+services:
+  oracle-mcp:
+    build: .
+    # Alternatively, pull the published image:
+    # image: deivisutpphilips/oracle-mcp-server:latest
+    environment:
+      # Transport: set to "streamable-http" to run as a persistent HTTP server.
+      # Omit or set to "stdio" to keep the default subprocess (stdio) behaviour.
+      MCP_TRANSPORT: streamable-http
+      MCP_PORT: "8000"
+      # MCP_HOST defaults to 0.0.0.0 inside the container — no need to set it.
+
+      # API key for Bearer token auth.  Set in your shell or a .env file:
+      #   export MCP_API_KEY=your-secret-key
+      # Clients must send:  Authorization: Bearer <MCP_API_KEY>
+      MCP_API_KEY: "${MCP_API_KEY}"
+
+      # Oracle connection — required.
+      ORACLE_CONNECTION_STRING: "${ORACLE_CONNECTION_STRING}"
+
+      # Optional: restrict tools to a specific schema.
+      TARGET_SCHEMA: "${TARGET_SCHEMA:-}"
+
+      # Schema cache directory (persisted via the volume below).
+      CACHE_DIR: /app/.cache
+
+      # Optional: enable Oracle Thick Mode (requires Instant Client libs in the image).
+      # THICK_MODE: "true"
+    ports:
+      - "${MCP_PORT:-8000}:8000"
+    volumes:
+      # Persist schema cache across container restarts so the expensive first-load
+      # only happens once.
+      - oracle-mcp-cache:/app/.cache
+    restart: unless-stopped
+    healthcheck:
+      # /health is always unauthenticated and returns {"status":"ok"}
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # Allow up to 90 s for Oracle schema cache to build on first start.
+      start_period: 90s
+
+volumes:
+  oracle-mcp-cache:

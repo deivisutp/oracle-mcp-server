@@ -12,11 +12,11 @@ WORKDIR /opt/oracle
 # Set up architecture-specific variables
 ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        ORACLE_CLIENT_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.x64-23.7.0.25.01.zip"; \
+    ORACLE_CLIENT_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.x64-23.7.0.25.01.zip"; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
-        ORACLE_CLIENT_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.arm64-23.7.0.25.01.zip"; \
+    ORACLE_CLIENT_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-basic-linux.arm64-23.7.0.25.01.zip"; \
     else \
-        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
+    echo "Unsupported architecture: $TARGETARCH" && exit 1; \
     fi && \
     echo "Downloading Oracle Instant Client 23.7 for $TARGETARCH" && \
     curl -o instantclient.zip $ORACLE_CLIENT_URL && \
@@ -49,5 +49,8 @@ ENV PYTHONUNBUFFERED=1
 
 # Install package with UV (using --system flag)
 RUN uv pip install --system -e .
+
+# Expose HTTP port used by streamable-http transport (MCP_TRANSPORT=streamable-http)
+EXPOSE 8000
 
 CMD ["uv", "run", "main.py"]
