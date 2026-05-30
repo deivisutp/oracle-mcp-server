@@ -7,6 +7,11 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from dotenv import load_dotenv
+from starlette.applications import Starlette
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Mount, Route
 
 from db_context import DatabaseContext
 from db_context.schema.formatter import format_select_results
@@ -19,6 +24,12 @@ TARGET_SCHEMA = os.getenv('TARGET_SCHEMA')  # Optional schema override
 CACHE_DIR = os.getenv('CACHE_DIR', '.cache')
 USE_THICK_MODE = os.getenv('THICK_MODE', '').lower() in ('true', '1', 'yes')  # Convert string to boolean
 ORACLE_CLIENT_LIB_DIR = os.getenv('ORACLE_CLIENT_LIB_DIR', None)
+
+# HTTP transport settings (used when MCP_TRANSPORT=streamable-http)
+MCP_TRANSPORT = os.getenv('MCP_TRANSPORT', 'stdio')
+MCP_HOST = os.getenv('MCP_HOST', '0.0.0.0')
+MCP_PORT = int(os.getenv('MCP_PORT', '8000'))
+MCP_API_KEY = os.getenv('MCP_API_KEY')  # Optional; enables Bearer token auth when set
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[DatabaseContext]:
@@ -735,5 +746,43 @@ async def execute_plsql_call(call_statement: str, ctx: Context) -> str:
     except Exception as e:
         return f"Error executing PL/SQL call: {str(e)}"
 
+class _APIKeyMiddleware(BaseHTTPMiddleware):
+    """Validates Authorization: Bearer <key> on all routes except /health."""
+
+    def __init__(self, app: Starlette, api_key: str) -> None:
+        super().__init__(app)
+        self._api_key = api_key
+
+    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+        if request.url.path == "/health":
+            return await call_next(request)
+        auth = request.headers.get("Authorization", "")
+        if not (auth.startswith("Bearer ") and auth[7:] == self._api_key):
+            return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        return await call_next(request)
+
+
+async def _health_endpoint(request: Request) -> Response:
+    return Response('{"status":"ok"}', media_type="application/json")
+
+
 if __name__ == "__main__":
-    mcp.run()
+    if MCP_TRANSPORT == "streamable-http":
+        import uvicorn
+
+        mcp_app = mcp.streamable_http_app()
+        outer_app = Starlette(
+            routes=[
+                Route("/health", _health_endpoint),
+                Mount("/", mcp_app),
+            ]
+        )
+        if MCP_API_KEY:
+            outer_app.add_middleware(_APIKeyMiddleware, api_key=MCP_API_KEY)
+        print(
+            f"Starting MCP streamable-HTTP server on {MCP_HOST}:{MCP_PORT}",
+            file=sys.stderr,
+        )
+        uvicorn.run(outer_app, host=MCP_HOST, port=MCP_PORT)
+    else:
+        mcp.run()
